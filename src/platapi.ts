@@ -33,7 +33,7 @@ function fragmentShaderSource(): string {
     return source;  
 }
     
-export function renderView( canvas: HTMLCanvasElement ) {
+export function renderView( canvas: HTMLCanvasElement, positions: number[] ) {
     var gl = canvas.getContext("webgl2");
     if(!gl) {
         console.log("Could not get a webgl2 context!");
@@ -56,11 +56,6 @@ export function renderView( canvas: HTMLCanvasElement ) {
   // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-  var positions = [
-    0, 0,
-    0, 0.5,
-    0.7, 0,
-  ];
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
   // code above this line is initialization code.
