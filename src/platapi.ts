@@ -2,16 +2,19 @@ import { createShader, createProgram, resizeCanvasToDisplaySize} from './webglUt
 
 function vertexShaderSource(): string {
 
-const source: string = `
+const source: string = 
+`#version 300 es
 // an attribute will receive data from a buffer
-attribute vec4 a_position;
+in vec2 position;
+uniform vec2 resolution;
 
 // all shaders have a main function
 void main() {
+    vec2 scaled = position / ( resolution / 2.0 );
+    vec2 translated = scaled - 1.0;
+    vec2 mirrored = translated * vec2(1,-1);
 
-    // gl_Position is a special variable a vertex shader
-    // is responsible for setting
-    gl_Position = a_position;
+    gl_Position = vec4(mirrored, 0, 1);
 }
 `
 return source;  
@@ -19,21 +22,25 @@ return source;
 
 function fragmentShaderSource(): string {
 
-    const source: string = `
+    const source: string = 
+    `#version 300 es
     // fragment shaders don't have a default precision so we need
     // to pick one. mediump is a good default
     precision mediump float;
+    out vec4 fragmentColor;
+    uniform vec4 color;
 
     void main() {
-        // gl_FragColor is a special variable a fragment shader
-        // is responsible for setting
-        gl_FragColor = vec4(1, 0, 0.5, 1); // return redish-purple
+        fragmentColor = color;
     }
     `
     return source;  
 }
     
-export function renderView( canvas: HTMLCanvasElement, positions: number[] ) {
+export function renderView(
+    canvas: HTMLCanvasElement,
+    objects: { pos: number[], color: number[]}[]
+) {
     var gl = canvas.getContext("webgl2");
     if(!gl) {
         console.log("Could not get a webgl2 context!");
@@ -48,7 +55,9 @@ export function renderView( canvas: HTMLCanvasElement, positions: number[] ) {
   var program = createProgram(gl, vertexShader, fragmentShader);
 
   // look up where the vertex data needs to go.
-  var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+  var positionLoc = gl.getAttribLocation(program, "position");
+  var resolutionLoc = gl.getUniformLocation(program, "resolution");
+  var colorLoc = gl.getUniformLocation(program, "color");
 
   // Create a buffer and put three 2d clip space points in it
   var positionBuffer = gl.createBuffer();
@@ -56,7 +65,6 @@ export function renderView( canvas: HTMLCanvasElement, positions: number[] ) {
   // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
   // code above this line is initialization code.
   // code below this line is rendering code.
@@ -74,8 +82,8 @@ export function renderView( canvas: HTMLCanvasElement, positions: number[] ) {
   gl.useProgram(program);
 
   // Turn on the attribute
-  gl.enableVertexAttribArray(positionAttributeLocation);
-
+  gl.enableVertexAttribArray(positionLoc);
+  
   // Bind the position buffer.
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
@@ -86,13 +94,16 @@ export function renderView( canvas: HTMLCanvasElement, positions: number[] ) {
   var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
   var offset = 0;        // start at the beginning of the buffer
   gl.vertexAttribPointer(
-      positionAttributeLocation, size, type, normalize, stride, offset);
+      positionLoc, size, type, normalize, stride, offset);
+
+  gl.uniform2f(resolutionLoc, gl.canvas.width, gl.canvas.height);
 
   // draw
-  var primitiveType = gl.TRIANGLES;
-  var offset = 0;
-  var count = 3;
-  gl.drawArrays(primitiveType, offset, count);
+  for( var i = 0; i < objects.length; i++){
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array( objects[i].pos ), gl.STATIC_DRAW);
+    gl.uniform4fv(colorLoc, objects[i].color)
+    gl.drawArrays(gl.TRIANGLES, 0, objects[i].pos.length );
+  }
 
 }
 
