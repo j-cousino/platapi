@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>WebGL Fundamentals</title>
+        <script src="../../dist/platapi.js"></script>
+        <link rel="stylesheet" href="index.css">
+    </head>
+    <body>
+        <canvas id="webgl"></canvas>
+        <script>
+            const renderer = new platapi.renderer("webgl");
+            const scene = new platapi.scene()
+            console.log('scene id: %i', scene.id);
+
+            renderer.setSize( "90%", "90%");
+            renderer.clear();
+            renderer.render();
+        </script>
+    </body>
+</html>
